@@ -43,7 +43,7 @@
   .footer{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap}
   .btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-  /* 犯規鬼臉 */
+  /* 犯規鬼臉（外部圖片 demon.png） */
   #demonFace{
     position:fixed; top:50%; left:50%;
     transform:translate(-50%,-50%) scale(.85);
@@ -117,13 +117,13 @@
       <div class="btnrow">
         <button id="shareBtn" class="btn secondary">生成分享圖片（9:16）</button>
         <button id="resetBtn" class="btn danger">清空紀錄</button>
-        <span class="muted">v1.8</span>
+        <span class="muted">v2.0</span>
       </div>
     </div>
   </div>
 </div>
 
-<div id="toast" class="toast">找不到 demon.png，請上傳圖片或確認檔名與位置</div>
+<div id="toast" class="toast">找不到 demon.png，請上傳或確認檔名與位置</div>
 
 <script>
 (() => {

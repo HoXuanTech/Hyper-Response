@@ -1,123 +1,27 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>反應力小遊戲</title>
-<style>
-  :root { --bg:#111; --card:#1e1e1e; --ok:#25a244; --wait:#a4161a; --text:#eee; --muted:#bbb; }
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans TC",Segoe UI,Roboto}
-  .wrap{min-height:100dvh;display:grid;place-items:center;padding:20px}
-  .card{width:min(520px,92vw);background:var(--card);border-radius:20px;padding:20px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-  h1{margin:0 0 8px;font-size:24px} p{margin:6px 0;color:var(--muted)}
-  .arena{margin-top:14px;border-radius:16px;height:280px;display:grid;place-items:center;user-select:none;touch-action:manipulation;transition:.15s}
-  .arena.wait{background:var(--wait)} .arena.ready{background:var(--ok)} .arena.idle{background:#2a2a2a}
-  .big{font-size:28px;font-weight:700} .btn{margin-top:12px;width:100%;padding:12px 16px;border:0;border-radius:12px;background:#3b82f6;color:#fff;font-size:16px;cursor:pointer}
-  .row{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
-  .stat{flex:1;min-width:150px;background:#2a2a2a;border-radius:12px;padding:10px}
-  .label{font-size:12px;color:#9aa}
-</style>
+  <meta charset="utf-8">
+  <title>GitHub Pages 測試</title>
+  <style>
+    body {
+      font-family: system-ui, "Noto Sans TC", sans-serif;
+      background: #f5f5f5;
+      text-align: center;
+      padding: 80px;
+    }
+    h1 {
+      font-size: 2.5em;
+      color: #2c7be5;
+    }
+    p {
+      font-size: 1.2em;
+      color: #444;
+    }
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="card">
-    <h1>反應力小遊戲</h1>
-    <p>按「開始」，等畫面變綠再點擊。太早點會犯規！</p>
-
-    <div id="arena" class="arena idle">
-      <div class="big" id="hint">按開始</div>
-    </div>
-
-    <button id="startBtn" class="btn">開始</button>
-
-    <div class="row">
-      <div class="stat">
-        <div class="label">本次成績</div>
-        <div id="last">—</div>
-      </div>
-      <div class="stat">
-        <div class="label">最佳成績</div>
-        <div id="best">—</div>
-      </div>
-      <div class="stat">
-        <div class="label">遊戲次數</div>
-        <div id="plays">0</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-(() => {
-  const arena = document.getElementById('arena');
-  const hint = document.getElementById('hint');
-  const startBtn = document.getElementById('startBtn');
-  const lastEl = document.getElementById('last');
-  const bestEl = document.getElementById('best');
-  const playsEl = document.getElementById('plays');
-
-  const LS_KEY = 'reaction_best_ms';
-  const LS_PLAYS = 'reaction_plays';
-
-  let state = 'idle';    // 'idle' | 'wait' | 'ready'
-  let timerId = null;
-  let startTime = 0;
-
-  let best = Number(localStorage.getItem(LS_KEY) || 0) || null;
-  let plays = Number(localStorage.getItem(LS_PLAYS) || 0);
-  updateHUD();
-
-  function updateHUD(last=null){
-    bestEl.textContent = best ? (best.toFixed(0) + ' ms') : '—';
-    playsEl.textContent = String(plays);
-    if(last !== null) lastEl.textContent = last + ' ms';
-  }
-
-  function setState(s){
-    state = s;
-    arena.classList.remove('idle','wait','ready');
-    arena.classList.add(s);
-    if(s==='idle') hint.textContent = '按開始';
-    if(s==='wait') hint.textContent = '等綠色...（不要點！）';
-    if(s==='ready') hint.textContent = '點擊！';
-  }
-
-  function startGame(){
-    clearTimeout(timerId);
-    setState('wait');
-    // 隨機延遲 1.0 ~ 2.5 秒
-    const delay = 1000 + Math.random()*1500;
-    timerId = setTimeout(() => {
-      setState('ready');
-      startTime = performance.now();
-    }, delay);
-  }
-
-  function tooSoon(){
-    clearTimeout(timerId);
-    setState('idle');
-    hint.textContent = '太早了！再試一次';
-  }
-
-  function handleTap(){
-    if(state==='wait') return tooSoon();
-    if(state!=='ready') return;
-    const elapsed = Math.max(1, Math.round(performance.now() - startTime));
-    plays++;
-    if(!best || elapsed < best) best = elapsed;
-    localStorage.setItem(LS_KEY, String(best));
-    localStorage.setItem(LS_PLAYS, String(plays));
-    updateHUD(elapsed);
-    setState('idle');
-    hint.textContent = `你的成績：${elapsed} ms`;
-  }
-
-  // 事件
-  startBtn.addEventListener('click', startGame);
-  arena.addEventListener('click', () => { if(state==='ready') handleTap(); else if(state==='wait') tooSoon(); });
-  // 觸控友善
-  arena.addEventListener('touchstart', (e)=>{ e.preventDefault(); if(state==='ready') handleTap(); else if(state==='wait') tooSoon(); }, {passive:false});
-})();
-</script>
+  <h1>Hello GitHub Pages 👋</h1>
+  <p>如果你能看到這個畫面，代表部署成功！</p>
 </body>
 </html>

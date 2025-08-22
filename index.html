@@ -1,330 +1,179 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>反應力小遊戲 — 強化版</title>
-<style>
-  :root{
-    --bg:#0f1115; --card:#171922; --ok:#25a244; --wait:#e53935; --idle:#2a2f3a;
-    --text:#e9eef6; --muted:#9aa7b2; --primary:#3b82f6; --accent:#8b5cf6;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:linear-gradient(160deg,#0f1115,#111423);min-height:100dvh;color:var(--text);font-family:system-ui,-apple-system,"Noto Sans TC",Segoe UI,Roboto}
-  .wrap{min-height:100dvh;display:grid;place-items:center;padding:24px}
-  .card{width:min(680px,94vw);background:rgba(23,25,34,.9);backdrop-filter: blur(8px);
-        border:1px solid rgba(255,255,255,.06);border-radius:24px;padding:22px 22px 10px;
-        box-shadow:0 20px 40px rgba(0,0,0,.45)}
-  h1{margin:0 0 8px;font-size:26px;letter-spacing:.3px}
-  p{margin:6px 0;color:var(--muted)}
-  .topbar{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:10px}
-  select{appearance:none;padding:10px 14px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#1c2130;color:var(--text);cursor:pointer;transition:.2s}
-  select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,130,246,.25)}
-  .btn{padding:12px 18px;border:0;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;
-       font-size:16px;cursor:pointer;transition:transform .06s ease, filter .2s ease; box-shadow:0 10px 20px rgba(59,130,246,.25)}
-  .btn:hover{filter:brightness(1.05)}
-  .btn:active{transform:translateY(1px) scale(.99)}
-  .btn.secondary{background:#263146;border:1px solid rgba(255,255,255,.12)}
-  .btn.danger{background:#b91c1c;border:1px solid rgba(255,255,255,.18)}
-  .arena{margin-top:16px;border-radius:18px;height:300px;display:grid;place-items:center;user-select:none;touch-action:manipulation;transition:background .15s, transform .08s}
-  .arena.idle{background:var(--idle)}
-  .arena.wait{background:var(--wait)}
-  .arena.ready{background:var(--ok); transform: scale(1.01)}
-  .big{font-size:30px;font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.2)}
-  .row{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0 6px}
-  .stat{flex:1;min-width:160px;background:#1b2030;border:1px solid rgba(255,255,255,.06);
-        border-radius:14px;padding:10px 12px}
-  .label{font-size:12px;color:#a7b1bd;margin-bottom:4px}
-  #hintSub{font-size:14px;color:#223;opacity:.7}
-  ol{margin:6px 0 0 20px;padding:0}
-  .muted{color:var(--muted)}
-  .chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:#23324b;color:#9fc3ff;border:1px solid #2b436d}
-  .footer{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap}
-  .btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-</style>
+  <meta charset="UTF-8">
+  <title>紅綠燈反應遊戲（含挑戰級）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: "Noto Sans TC", system-ui, -apple-system, sans-serif;
+           background:#0f1115; color:#e9eef6; margin:0; padding:40px 20px; }
+    .wrap{ max-width:720px; margin:0 auto; background:#171922; border:1px solid rgba(255,255,255,.08);
+           border-radius:20px; padding:24px; box-shadow:0 20px 40px rgba(0,0,0,.45);}
+    h1{ margin:0 0 8px; font-size:26px }
+    p{ margin:6px 0; color:#9aa7b2}
+    .topbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:8px}
+    select, button{ font-size:16px; border-radius:12px; border:1px solid rgba(255,255,255,.12);
+                    background:#1c2130; color:#e9eef6; padding:10px 14px; }
+    button{ cursor:pointer; background:linear-gradient(135deg,#3b82f6,#8b5cf6); border:none;
+            box-shadow:0 10px 20px rgba(59,130,246,.25); transition:transform .06s, filter .2s}
+    button:hover{ filter:brightness(1.05) } button:active{ transform:translateY(1px) scale(.99) }
+    .arena{ margin:18px 0 10px; display:grid; place-items:center; height:320px; border-radius:18px;
+            background:#2a2f3a; user-select:none; }
+    .light{ width:160px; height:160px; border-radius:50%; box-shadow:inset 0 0 30px rgba(0,0,0,.5);
+            transition: background .15s, box-shadow .15s }
+    .red{ background:#e53935; box-shadow:0 0 30px rgba(229,57,53,.65), inset 0 0 30px rgba(0,0,0,.5) }
+    .yellow{ background:#fbbf24; box-shadow:0 0 30px rgba(251,191,36,.6), inset 0 0 30px rgba(0,0,0,.5) }
+    .green{ background:#22c55e; box-shadow:0 0 30px rgba(34,197,94,.6), inset 0 0 30px rgba(0,0,0,.5) }
+    .hint{ margin-top:14px; font-weight:700; font-size:18px }
+    #result{ margin-top:8px; font-size:18px }
+    /* 犯規鬼臉 */
+    #demonFace{
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.85);
+      width:220px; max-width:45vw; opacity:0; pointer-events:none; z-index:99;
+      filter:drop-shadow(0 0 16px rgba(229,57,53,.9)) saturate(1.1);
+      transition:opacity .18s ease, transform .18s ease;
+    }
+    .show-demon{ opacity:1 !important; animation:shake .3s infinite; transform:translate(-50%,-50%) scale(1); }
+    @keyframes shake{
+      0%,100%{ transform:translate(-50%,-50%) scale(1) rotate(0deg); }
+      25%{ transform:translate(-50%,-50%) scale(1.02) rotate(8deg); }
+      50%{ transform:translate(-50%,-50%) scale(1) rotate(-8deg); }
+      75%{ transform:translate(-50%,-50%) scale(1.02) rotate(6deg); }
+    }
+    .muted{ color:#9aa7b2 }
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="card">
-    <h1>反應力小遊戲 <span class="chip">強化版</span></h1>
-    <p>按「開始」，等畫面變綠再點擊。太早點會犯規！</p>
+  <!-- 犯規鬼臉（請在 repo 放 demon.png 與本檔同層） -->
+  <img id="demonFace" src="demon.png" alt="犯規！"/>
+
+  <div class="wrap">
+    <h1>紅綠燈反應遊戲 🚦</h1>
+    <p>只有<strong>綠燈</strong>可以按。紅燈或黃燈按下會被鬼臉指責 👹</p>
 
     <div class="topbar">
-      <span class="muted">模式</span>
-      <select id="mode">
-        <option value="normal">一般（1.0 ~ 2.5 秒）</option>
-        <option value="focus">專注（2.0 ~ 5.0 秒）</option>
-        <option value="flash">閃電（0.5 ~ 1.5 秒）</option>
-      </select>
-      <button id="startBtn" class="btn">開始</button>
-      <span id="hintSub" class="muted"></span>
+      <label>等級：
+        <select id="level">
+          <option value="normal">一般</option>
+          <option value="challenge">挑戰級（可能先亮黃燈）</option>
+        </select>
+      </label>
+      <button id="startBtn">開始</button>
+      <button id="tapBtn">我按了！</button>
+      <span id="status" class="muted"></span>
     </div>
 
-    <div id="arena" class="arena idle">
-      <div class="big" id="hint">按開始</div>
+    <div class="arena" id="arena">
+      <div id="light" class="light red"></div>
+      <div class="hint" id="hint">按「開始」準備</div>
     </div>
 
-    <div class="row">
-      <div class="stat">
-        <div class="label">本次成績</div>
-        <div id="last">—</div>
-      </div>
-      <div class="stat">
-        <div class="label">最佳成績</div>
-        <div id="best">—</div>
-      </div>
-      <div class="stat">
-        <div class="label">遊戲次數</div>
-        <div id="plays">0</div>
-      </div>
-      <div class="stat" style="flex:1.4">
-        <div class="label">Top 5（越低越好）</div>
-        <ol id="top5"></ol>
-      </div>
-    </div>
-
-    <div class="footer">
-      <div class="muted">提示音效：變綠「叮」、犯規「噗」。</div>
-      <div class="btnrow">
-        <button id="shareBtn" class="btn secondary">生成分享圖片</button>
-        <button id="resetBtn" class="btn danger">清空紀錄</button>
-        <span class="muted">v1.4</span>
-      </div>
-    </div>
+    <div id="result"></div>
+    <p class="muted">小技巧：挑戰級會隨機出現黃燈 0.3–0.8 秒，別被騙了！</p>
   </div>
-</div>
 
 <script>
 (() => {
-  // --- DOM
-  const arena = document.getElementById('arena');
-  const hint = document.getElementById('hint');
-  const hintSub = document.getElementById('hintSub');
+  const light = document.getElementById('light');
   const startBtn = document.getElementById('startBtn');
-  const modeSel = document.getElementById('mode');
-  const lastEl = document.getElementById('last');
-  const bestEl = document.getElementById('best');
-  const playsEl = document.getElementById('plays');
-  const top5El = document.getElementById('top5');
-  const shareBtn = document.getElementById('shareBtn');
-  const resetBtn = document.getElementById('resetBtn');
+  const tapBtn = document.getElementById('tapBtn');
+  const levelSel = document.getElementById('level');
+  const hint = document.getElementById('hint');
+  const result = document.getElementById('result');
+  const statusEl = document.getElementById('status');
+  const demonFace = document.getElementById('demonFace');
 
-  // --- LocalStorage keys
-  const LS_BEST = 'reaction_best_ms';
-  const LS_PLAYS = 'reaction_plays';
-  const LS_TOP5 = 'reaction_top5_ms'; // JSON array
+  let current = 'red';      // 'red' | 'yellow' | 'green'
+  let startTime = 0;        // 綠燈開始時間
+  let timerA = null;        // 計時器：等綠或黃
+  let timerB = null;        // 計時器：黃轉綠
+  let playing = false;
 
-  // --- State
-  let state = 'idle';  // 'idle' | 'wait' | 'ready'
-  let timerId = null;
-  let startTime = 0;
-  let best = Number(localStorage.getItem(LS_BEST) || 0) || null;
-  let plays = Number(localStorage.getItem(LS_PLAYS) || 0);
-  let top5 = [];
-  try { top5 = JSON.parse(localStorage.getItem(LS_TOP5) || '[]'); } catch(e){ top5 = []; }
-  renderHUD();
-
-  // --- Sound (WebAudio)
   const AC = window.AudioContext || window.webkitAudioContext;
   const audioCtx = new AC();
   const now = () => audioCtx.currentTime;
   function beep(freq=880, dur=0.08, type='sine', gain=0.08){
-    const t0 = now();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
+    const t0 = now(); const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
     o.type = type; o.frequency.setValueAtTime(freq, t0);
-    g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(gain, t0 + 0.005);
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(gain, t0 + 0.005);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g).connect(audioCtx.destination);
-    o.start(t0); o.stop(t0 + dur + 0.02);
+    o.connect(g).connect(audioCtx.destination); o.start(t0); o.stop(t0 + dur + 0.02);
   }
-  function soundReady(){ beep(1200, 0.09, 'triangle', 0.10); }
-  function soundSuccess(){ beep(900, 0.06, 'sine', 0.07); beep(1200,0.06,'sine',0.07); }
-  function soundTooSoon(){ beep(200, 0.12, 'square', 0.10); }
+  const sndReady = ()=>beep(1200,0.09,'triangle',0.10);
+  const sndFoul  = ()=>beep(200, 0.12,'square',0.12);
+  const sndGood  = ()=>{beep(900,0.06,'sine',0.08); beep(1200,0.06,'sine',0.08);};
 
-  // --- HUD 渲染
-  function renderHUD(last=null){
-    bestEl.textContent = best ? (best.toFixed(0) + ' ms') : '—';
-    playsEl.textContent = String(plays);
-    if(last !== null) lastEl.textContent = last + ' ms';
-    // Top5
-    top5El.innerHTML = '';
-    if(!top5.length){ const li=document.createElement('li'); li.textContent='—'; top5El.appendChild(li); }
-    top5.slice(0,5).forEach((v,i)=>{
-      const li = document.createElement('li');
-      li.textContent = v.toFixed(0) + ' ms';
-      if(i===0) li.style.color = '#7ee787';
-      top5El.appendChild(li);
-    });
-    // mode hint
-    const m = modeSel.value;
-    hintSub.textContent =
-      m==='normal' ? '等待範圍：1.0 ~ 2.5s' :
-      m==='focus'  ? '等待範圍：2.0 ~ 5.0s（更耐心）' :
-                     '等待範圍：0.5 ~ 1.5s（更刺激）';
+  function setLight(color){
+    current = color;
+    light.className = 'light ' + color;
+    if(color==='red')   hint.textContent = '等候中…（不要按）';
+    if(color==='yellow')hint.textContent = '小心！還沒綠！';
+    if(color==='green') hint.textContent = '現在！快按！';
   }
 
-  function setState(s){
-    state = s;
-    arena.classList.remove('idle','wait','ready');
-    arena.classList.add(s);
-    if(s==='idle') hint.textContent = '按開始';
-    if(s==='wait') hint.textContent = '等綠色...（不要點！）';
-    if(s==='ready'){ hint.textContent = '點擊！'; soundReady(); }
+  function showDemon(){
+    demonFace.classList.add('show-demon');
+    setTimeout(()=>demonFace.classList.remove('show-demon'), 1500);
   }
 
-  function rndDelayByMode(){
-    switch(modeSel.value){
-      case 'focus': return 2000 + Math.random()*3000;   // 2~5s
-      case 'flash': return 500 + Math.random()*1000;    // 0.5~1.5s
-      default:      return 1000 + Math.random()*1500;   // 1~2.5s
-    }
+  function reset(){
+    clearTimeout(timerA); clearTimeout(timerB);
+    timerA = timerB = null;
+    playing = false;
+    setLight('red');
+    statusEl.textContent = '';
   }
 
   function startGame(){
-    clearTimeout(timerId);
-    setState('wait');
-    const delay = rndDelayByMode();
-    timerId = setTimeout(() => {
-      setState('ready');
-      startTime = performance.now();
+    audioCtx.resume();
+    reset();
+    playing = true;
+    result.textContent = '';
+    statusEl.textContent = '準備…';
+    // 隨機等待：一般 1~2.5s；挑戰級 1~3s
+    const delay = (levelSel.value==='challenge')
+      ? (1000 + Math.random()*2000)
+      : (1000 + Math.random()*1500);
+
+    timerA = setTimeout(()=>{
+      if(levelSel.value==='challenge' && Math.random()<0.55){
+        // 先亮黃燈 0.3~0.8s 再轉綠
+        setLight('yellow');
+        timerB = setTimeout(()=>{
+          setLight('green'); sndReady();
+          startTime = performance.now();
+        }, 300 + Math.random()*500);
+      }else{
+        // 直接綠燈
+        setLight('green'); sndReady();
+        startTime = performance.now();
+      }
     }, delay);
   }
 
-  function tooSoon(){
-    clearTimeout(timerId);
-    setState('idle');
-    hint.textContent = '太早了！再試一次';
-    soundTooSoon();
-  }
-
-  function recordTop5(ms){
-    top5.push(ms);
-    top5.sort((a,b)=>a-b);
-    if(top5.length>5) top5 = top5.slice(0,5);
-    localStorage.setItem(LS_TOP5, JSON.stringify(top5));
+  function foul(reason='犯規！'){
+    sndFoul();
+    showDemon();
+    result.textContent = reason + '（只能在綠燈按）';
+    reset();
   }
 
   function handleTap(){
-    if(state==='wait') return tooSoon();
-    if(state!=='ready') return;
-    const elapsed = Math.max(1, Math.round(performance.now() - startTime));
-    plays++;
-    if(!best || elapsed < best) best = elapsed;
-    recordTop5(elapsed);
-    localStorage.setItem(LS_BEST, String(best));
-    localStorage.setItem(LS_PLAYS, String(plays));
-    renderHUD(elapsed);
-    setState('idle');
-    hint.textContent = `你的成績：${elapsed} ms`;
-    soundSuccess();
+    audioCtx.resume();
+    if(!playing){ result.textContent='請先按「開始」'; return; }
+    if(current!=='green'){ return foul(current==='yellow' ? '黃燈按下' : '太早了'); }
+    // 合法
+    const rt = Math.round(performance.now() - startTime);
+    sndGood();
+    result.textContent = `你的反應時間：${rt} ms`;
+    statusEl.textContent = '做得好！再來一局？';
+    reset();
   }
 
-  // --- 生成分享圖片（Canvas）
-  function pad(n){ return n<10 ? '0'+n : ''+n; }
-  function todayStr(){
-    const d = new Date();
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  }
-  function modeName(){
-    return modeSel.value==='normal' ? '一般' : modeSel.value==='focus' ? '專注' : '閃電';
-  }
-  function genShareCard(){
-    const W = 1200, H = 630;
-    const c = document.createElement('canvas');
-    c.width = W; c.height = H;
-    const g = c.getContext('2d');
-
-    const grad = g.createLinearGradient(0,0,W,H);
-    grad.addColorStop(0,'#0f172a'); grad.addColorStop(1,'#1e293b');
-    g.fillStyle = grad; g.fillRect(0,0,W,H);
-
-    g.fillStyle = 'rgba(59,130,246,0.18)';
-    g.beginPath(); g.arc(1050,120,160,0,Math.PI*2); g.fill();
-    g.fillStyle = 'rgba(139,92,246,0.22)';
-    g.beginPath(); g.arc(180,560,190,0,Math.PI*2); g.fill();
-
-    g.fillStyle = '#e5edff';
-    g.font = '700 64px system-ui, -apple-system, "Noto Sans TC"';
-    g.fillText('反應力小遊戲', 72, 120);
-
-    g.fillStyle = '#a7b1bd';
-    g.font = '500 26px system-ui, -apple-system, "Noto Sans TC"';
-    g.fillText(`模式：${modeName()}｜日期：${todayStr()}`, 72, 165);
-
-    const cardX=72, cardY=200, cardW=W-144, cardH=H-280;
-    g.fillStyle = 'rgba(30,41,59,0.9)';
-    roundRect(g, cardX, cardY, cardW, cardH, 22, true, false);
-
-    g.fillStyle = '#9fbaff';
-    g.font = '500 24px system-ui, -apple-system, "Noto Sans TC"';
-    g.fillText('最佳成績', cardX+32, cardY+58);
-    g.fillStyle = '#7ee787';
-    g.font = '800 68px system-ui, -apple-system, "Noto Sans TC"';
-    g.fillText(best ? `${best.toFixed(0)} ms` : '—', cardX+32, cardY+130);
-
-    g.fillStyle = '#a7b1bd';
-    g.font = '500 24px system-ui, -apple-system, "Noto Sans TC"';
-    g.fillText('Top 5（越低越好）', cardX+32, cardY+190);
-    g.font = '600 32px system-ui, -apple-system, "Noto Sans TC"';
-    g.fillStyle = '#e5edff';
-    const list = (top5.length? top5.slice(0,5) : ['—']);
-    list.forEach((v, i) => {
-      const text = (typeof v === 'number') ? `${v.toFixed(0)} ms` : v;
-      g.fillStyle = i===0 ? '#7ee787' : '#e5edff';
-      g.fillText(`${i+1}. ${text}`, cardX+32, cardY+240 + i*48);
-    });
-
-    g.fillStyle='#93c5fd';
-    g.font='600 22px system-ui, -apple-system, "Noto Sans TC"';
-    g.fillText('Made with Hyper-Response', W-420, H-40);
-
-    const a = document.createElement('a');
-    a.href = c.toDataURL('image/png');
-    a.download = `reaction-top5-${todayStr()}.png`;
-    a.click();
-  }
-
-  function roundRect(ctx, x, y, w, h, r, fill, stroke){
-    if (typeof r === 'number') r = {tl:r, tr:r, br:r, bl:r};
-    ctx.beginPath();
-    ctx.moveTo(x+r.tl, y);
-    ctx.lineTo(x+w-r.tr, y);
-    ctx.quadraticCurveTo(x+w, y, x+w, y+r.tr);
-    ctx.lineTo(x+w, y+h-r.br);
-    ctx.quadraticCurveTo(x+w, y+h, x+w-r.br, y+h);
-    ctx.lineTo(x+r.bl, y+h);
-    ctx.quadraticCurveTo(x, y+h, x, y+h-r.bl);
-    ctx.lineTo(x, y+r.tl);
-    ctx.quadraticCurveTo(x, y, x+r.tl, y);
-    ctx.closePath();
-    if (fill) ctx.fill();
-    if (stroke) ctx.stroke();
-  }
-
-  // --- 清空紀錄
-  function resetAll(){
-    if(!confirm('確定要清空所有紀錄嗎？（最佳成績、Top 5、遊戲次數）')) return;
-    localStorage.removeItem(LS_BEST);
-    localStorage.removeItem(LS_PLAYS);
-    localStorage.removeItem(LS_TOP5);
-    // 重置本地狀態
-    best = null;
-    plays = 0;
-    top5 = [];
-    lastEl.textContent = '—';
-    renderHUD();
-    alert('已清空！');
-  }
-
-  // --- Events
-  startBtn.addEventListener('click', () => { audioCtx.resume(); startGame(); });
-  modeSel.addEventListener('change', () => renderHUD());
-  arena.addEventListener('click', () => { if(state==='ready') handleTap(); else if(state==='wait') tooSoon(); });
-  arena.addEventListener('touchstart', (e)=>{ e.preventDefault(); if(state==='ready') handleTap(); else if(state==='wait') tooSoon(); }, {passive:false});
-  shareBtn.addEventListener('click', () => { audioCtx.resume(); genShareCard(); });
-  resetBtn.addEventListener('click', resetAll);
+  startBtn.addEventListener('click', startGame);
+  tapBtn.addEventListener('click', handleTap);
+  // 也允許直接點燈區域
+  document.getElementById('arena').addEventListener('click', handleTap);
 })();
 </script>
 </body>

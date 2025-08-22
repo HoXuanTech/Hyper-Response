@@ -43,7 +43,7 @@
   .footer{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap}
   .btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-  /* 犯規鬼臉（內嵌 data URI） */
+  /* 犯規鬼臉動畫樣式（圖片由 JS 產生） */
   #demonFace{
     position:fixed; top:50%; left:50%;
     transform:translate(-50%,-50%) scale(.85);
@@ -63,31 +63,8 @@
 </head>
 <body>
 
-<!-- 內嵌鬼臉圖（SVG） -->
-<img id="demonFace" alt="犯規！"
-  src='data:image/svg+xml;utf8,
-  <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 256 256">
-    <defs>
-      <radialGradient id="g" cx="50%" cy="40%" r="60%">
-        <stop offset="0%" stop-color="#ff6b6b"/><stop offset="100%" stop-color="#b91c1c"/>
-      </radialGradient>
-    </defs>
-    <rect width="256" height="256" fill="none"/>
-    <g>
-      <path d="M128 24c-52 0-84 38-84 86 0 58 42 100 84 100s84-42 84-100c0-48-32-86-84-86z" fill="url(#g)" stroke="#7f1d1d" stroke-width="6" />
-      <ellipse cx="88" cy="110" rx="18" ry="14" fill="#111"/>
-      <ellipse cx="168" cy="110" rx="18" ry="14" fill="#111"/>
-      <path d="M72 78c10-10 30-14 40-8" stroke="#111" stroke-width="6" fill="none"/>
-      <path d="M184 78c-10-10-30-14-40-8" stroke="#111" stroke-width="6" fill="none"/>
-      <path d="M72 158c20 16 92 16 112 0" stroke="#111" stroke-width="10" fill="none"/>
-      <path d="M80 190c14 10 82 10 96 0" stroke="#fee2e2" stroke-width="6" fill="none"/>
-      <circle cx="88" cy="110" r="6" fill="#fff"/>
-      <circle cx="168" cy="110" r="6" fill="#fff"/>
-      <path d="M40 120c-8-10-12-26-10-40 10 8 18 12 28 10" stroke="#7f1d1d" stroke-width="6" fill="none"/>
-      <path d="M216 120c8-10 12-26 10-40-10 8-18 12-28 10" stroke="#7f1d1d" stroke-width="6" fill="none"/>
-      <text x="128" y="232" font-family="Verdana" font-size="22" text-anchor="middle" fill="#fee2e2">你犯規了！</text>
-    </g>
-  </svg>' />
+<!-- 鬼臉：src 由 JS 動態用 Canvas 畫好後設定 -->
+<img id="demonFace" alt="犯規！"/>
 
 <div class="wrap">
   <div class="card">
@@ -134,7 +111,7 @@
       <div class="btnrow">
         <button id="shareBtn" class="btn secondary">生成分享圖片（9:16）</button>
         <button id="resetBtn" class="btn danger">清空紀錄</button>
-        <span class="muted">v1.6</span>
+        <span class="muted">v1.7</span>
       </div>
     </div>
   </div>
@@ -170,6 +147,73 @@
   let top5 = [];
   try { top5 = JSON.parse(localStorage.getItem(LS_TOP5) || '[]'); } catch(e){ top5 = []; }
   renderHUD();
+
+  // --- 產生鬼臉圖片（Canvas → dataURL）
+  function buildDemonImage(){
+    const W = 256, H = 256;
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d');
+
+    // 背景透明
+    g.clearRect(0,0,W,H);
+
+    // 臉（漸層）
+    const grad = g.createRadialGradient(W*0.5, H*0.4, 30, W*0.5, H*0.5, 140);
+    grad.addColorStop(0, '#ff6b6b');
+    grad.addColorStop(1, '#b91c1c');
+    g.fillStyle = grad;
+    round(g, W*0.18, H*0.12, W*0.64, H*0.76, 60);
+    g.fill();
+
+    // 外框
+    g.lineWidth = 6; g.strokeStyle = '#7f1d1d';
+    round(g, W*0.18, H*0.12, W*0.64, H*0.76, 60); g.stroke();
+
+    // 眼睛
+    g.fillStyle = '#111';
+    g.beginPath(); g.ellipse(88, 110, 18, 14, 0, 0, Math.PI*2); g.fill();
+    g.beginPath(); g.ellipse(168, 110, 18, 14, 0, 0, Math.PI*2); g.fill();
+    // 高光
+    g.fillStyle = '#fff';
+    g.beginPath(); g.arc(94,106,5,0,Math.PI*2); g.fill();
+    g.beginPath(); g.arc(174,106,5,0,Math.PI*2); g.fill();
+
+    // 眉線
+    g.strokeStyle = '#111'; g.lineWidth = 6;
+    line(g, 72,78, 112,70);
+    line(g, 184,78, 144,70);
+
+    // 嘴型
+    g.lineWidth = 10; g.strokeStyle = '#111';
+    line(g, 72,158, 184,158);
+    g.lineWidth = 6; g.strokeStyle = '#fee2e2';
+    line(g, 80,190, 176,190);
+
+    // 側角紋（像角）
+    g.lineWidth = 6; g.strokeStyle = '#7f1d1d';
+    line(g, 40,120, 58,90); line(g, 58,90, 70,112);
+    line(g, 216,120, 198,90); line(g, 198,90, 186,112);
+
+    // 底部字
+    g.fillStyle = '#fee2e2'; g.font = 'bold 20px system-ui, sans-serif';
+    g.textAlign = 'center'; g.fillText('你犯規了！', W/2, H-16);
+
+    demonFace.src = c.toDataURL('image/png');
+  }
+  function round(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+  }
+  function line(ctx, x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
 
   // --- Sound (WebAudio)
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -231,7 +275,7 @@
     switch(modeSel.value){
       case 'focus': return 2000 + Math.random()*3000;   // 2~5s
       case 'flash': return 500 + Math.random()*1000;    // 0.5~1.5s
-      case 'challenge': return 1000 + Math.random()*2000; // 1~3s（先決定紅燈等待）
+      case 'challenge': return 1000 + Math.random()*2000; // 1~3s
       default:      return 1000 + Math.random()*1500;   // 1~2.5s
     }
   }
@@ -279,7 +323,6 @@
   }
 
   function handleTap(){
-    // 在「等待」或「黃燈」按都犯規
     if(state==='wait') return tooSoon('太早了！');
     if(state==='yellow') return tooSoon('黃燈按下！');
     if(state!=='ready') return;
@@ -314,34 +357,27 @@
     c.width = W; c.height = H;
     const g = c.getContext('2d');
 
-    // 背景漸層
     const grad = g.createLinearGradient(0,0,W,H);
-    grad.addColorStop(0,'#0f172a');
-    grad.addColorStop(1,'#1e293b');
+    grad.addColorStop(0,'#0f172a'); grad.addColorStop(1,'#1e293b');
     g.fillStyle = grad; g.fillRect(0,0,W,H);
 
-    // 裝飾
     g.fillStyle = 'rgba(59,130,246,0.18)';
     g.beginPath(); g.arc(W-140,200,180,0,Math.PI*2); g.fill();
     g.fillStyle = 'rgba(139,92,246,0.22)';
     g.beginPath(); g.arc(180,H-180,220,0,Math.PI*2); g.fill();
 
-    // 標題
     g.fillStyle = '#e5edff';
     g.font = '800 84px system-ui, -apple-system, "Noto Sans TC"';
     g.fillText('反應力小遊戲', 72, 160);
 
-    // 子標題（模式/日期）
     g.fillStyle = '#a7b1bd';
     g.font = '500 34px system-ui, -apple-system, "Noto Sans TC"';
     g.fillText(`模式：${modeName()}｜日期：${todayStr()}`, 72, 212);
 
-    // 主卡片
     const cardX=64, cardY=280, cardW=W-128, cardH=H-400;
     g.fillStyle = 'rgba(30,41,59,0.92)';
     roundRect(g, cardX, cardY, cardW, cardH, 32, true, false);
 
-    // 最佳成績
     g.fillStyle = '#9fbaff';
     g.font = '600 36px system-ui, -apple-system, "Noto Sans TC"';
     g.fillText('最佳成績', cardX+40, cardY+80);
@@ -349,7 +385,6 @@
     g.font = '900 120px system-ui, -apple-system, "Noto Sans TC"';
     g.fillText(best ? `${best.toFixed(0)} ms` : '—', cardX+40, cardY+190);
 
-    // Top 3
     g.fillStyle = '#a7b1bd';
     g.font = '600 36px system-ui, -apple-system, "Noto Sans TC"';
     g.fillText('Top 3（越低越好）', cardX+40, cardY+270);
@@ -359,22 +394,18 @@
     list.forEach((v, i) => {
       const label = `${i+1}. `;
       const value = (typeof v === 'number') ? `${v.toFixed(0)} ms` : v;
-      // 排名號
       g.fillStyle = '#9fbaff';
       g.font = '700 56px system-ui, -apple-system, "Noto Sans TC"';
       g.fillText(label, cardX+40, baseY + i*100);
-      // 成績
       g.fillStyle = i===0 ? '#7ee787' : '#e5edff';
       g.font = '800 64px system-ui, -apple-system, "Noto Sans TC"';
       g.fillText(value, cardX+120, baseY + i*100);
     });
 
-    // 角落標記
     g.fillStyle='#93c5fd';
     g.font='600 28px system-ui, -apple-system, "Noto Sans TC"';
     g.fillText('Made with Hyper-Response', W-540, H-60);
 
-    // 下載
     const a = document.createElement('a');
     a.href = c.toDataURL('image/png');
     a.download = `reaction-top3-${todayStr()}.png`;
@@ -404,15 +435,14 @@
     localStorage.removeItem(LS_BEST);
     localStorage.removeItem(LS_PLAYS);
     localStorage.removeItem(LS_TOP5);
-    best = null;
-    plays = 0;
-    top5 = [];
+    best = null; plays = 0; top5 = [];
     lastEl.textContent = '—';
     renderHUD();
     alert('已清空！');
   }
 
   // --- Events
+  buildDemonImage(); // ← 產生鬼臉 PNG 並設定到 <img>
   startBtn.addEventListener('click', () => { audioCtx.resume(); startGame(); });
   modeSel.addEventListener('change', () => renderHUD());
   arena.addEventListener('click', () => {
